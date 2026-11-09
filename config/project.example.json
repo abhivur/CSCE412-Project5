@@ -1,0 +1,12 @@
+{
+  "project_id": "csce412-project5",
+  "domain": "csce412YOURNETID.me",
+  "region": "us-east-1",
+  "bucket": "csce412-yournetid-project5-CHANGE-ME",
+  "aws_profile": "default",
+  "hosted_zone_id": null,
+  "model": "gpt-4.1-mini",
+  "max_model_calls_per_agent": 8,
+  "max_output_tokens": 2200
+}
+

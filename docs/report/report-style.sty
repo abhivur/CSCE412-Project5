@@ -1,0 +1,35 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{report-style}[2026/11/08 Simple academic report style]
+\RequirePackage[letterpaper,margin=1in]{geometry}
+\RequirePackage{graphicx}
+\RequirePackage[hidelinks]{hyperref}
+\RequirePackage{listings}
+\RequirePackage{microtype}
+\RequirePackage{tikz}
+\RequirePackage{array}
+\RequirePackage{booktabs}
+\RequirePackage{enumitem}
+\setlength{\parindent}{1.5em}
+\setlength{\parskip}{0pt}
+\setcounter{tocdepth}{2}
+\setlist{itemsep=2pt,topsep=5pt,parsep=0pt}
+\lstset{basicstyle=\ttfamily\small,breaklines=true,
+  columns=fullflexible,keepspaces=true,showstringspaces=false,
+  xleftmargin=1.5em,aboveskip=8pt,belowskip=8pt}
+\hypersetup{pdfauthor={Sai Abhinav Vurakaranam},
+  pdftitle={GBM Cloud: CSCE 412 Project 5 Technical Report},
+  pdfsubject={Secure static website deployment using a custom multi-agent AI system},
+  pdfkeywords={GBM Cloud, CSCE 412, S3, CloudFront, OAC, AI agents},
+  plainpages=false}
+\newcommand{\filepath}[1]{\texttt{\path{#1}}}
+\newcommand{\gbmlogo}{%
+  \begin{tikzpicture}[x=1.35pt,y=-1.35pt]
+    \definecolor{gbmmaroon}{HTML}{6B293D}
+    \fill[gbmmaroon,rounded corners=23pt] (0,0) rectangle (64,64);
+    \draw[white,line width=5.13pt,line join=round]
+      (19,45) .. controls (3,45) and (2.6,22) .. (17.6,21)
+      .. controls (21,3.3) and (41,1.7) .. (45.6,18.6)
+      .. controls (62.8,18.6) and (63.2,45) .. (46,45) -- cycle;
+  \end{tikzpicture}%
+}
+\endinput

@@ -1,0 +1,108 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>GBM Cloud browser checks</title>
+<style>body{font:14px/1.6 system-ui;margin:24px;color:#502033}iframe{display:block;border:1px solid #ddd;margin-top:20px;max-width:100%}pre{white-space:pre-wrap}button{padding:10px 15px}</style>
+<body><h1>GBM Cloud browser interaction checks</h1><p>This local harness tests the real generated pages. It does not modify AWS or submit agent evidence.</p>
+<pre id="result">RUNNING</pre><iframe id="site" width="390" height="844" title="Website under test"></iframe>
+<script>
+"use strict";
+(async () => {
+  const results = [];
+  const frame = document.querySelector("#site");
+  const assert = (condition, message) => { if (!condition) throw new Error(message); results.push("PASS " + message); };
+  const load = (path) => new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error("Timed out loading " + path)), 10000);
+    frame.onload = () => { clearTimeout(timer); resolve(frame.contentDocument); };
+    frame.src = path;
+  });
+  function change(doc, selector, value) {
+    doc.querySelector(selector).value = value;
+    doc.querySelector(selector).dispatchEvent(new frame.contentWindow.Event("change", { bubbles: true }));
+  }
+  try {
+    let doc = await load("/solutions.html");
+    assert(doc.querySelectorAll("[data-solution]:not([hidden])").length === 6, "six solutions initially visible");
+    change(doc, "#solution-category", "security");
+    assert(doc.querySelectorAll("[data-solution]:not([hidden])").length === 2, "category filter shows two security solutions");
+    change(doc, "#solution-level", "intermediate");
+    assert(doc.querySelectorAll("[data-solution]:not([hidden])").length === 1, "combined filters show one solution");
+    change(doc, "#solution-category", "web");
+    assert(!doc.querySelector("#solution-empty").hidden, "empty filter result is explained");
+    assert(doc.querySelector("#solution-count").textContent.startsWith("0 "), "zero count announced");
+    doc.querySelector("#reset-filters").click();
+    assert(doc.querySelectorAll("[data-solution]:not([hidden])").length === 6, "reset restores every solution");
+    doc.querySelector(".menu-toggle").click();
+    assert(doc.querySelector(".menu-toggle").getAttribute("aria-expanded") === "true", "mobile navigation opens");
+    doc.dispatchEvent(new frame.contentWindow.KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+    assert(doc.querySelector(".menu-toggle").getAttribute("aria-expanded") === "false", "Escape closes mobile navigation");
+
+    doc = await load("/planner.html");
+    // Isolate this test without wiping unrelated browser data.
+    const win = frame.contentWindow;
+    const newKey = "gbm-cloud-launch-plan-v1";
+    const oldKey = "field-notes-plan-v1";
+    const backup = { current: win.localStorage.getItem(newKey), old: win.localStorage.getItem(oldKey) };
+    try {
+      win.localStorage.removeItem(newKey);
+      win.localStorage.removeItem(oldKey);
+      doc = await load("/planner.html?solution=Static%20website");
+      assert(doc.querySelector("#project-name").value === "Static website", "solution selection reaches launch planner");
+      change(doc, "#project-scope", "launch");
+      change(doc, "#project-focus", "security");
+      doc.querySelector("#launch-planner").dispatchEvent(new frame.contentWindow.Event("submit", { cancelable: true, bubbles: true }));
+      assert(doc.querySelector("#launch-checklist").textContent.includes("Review bucket policy scope"), "security checklist generated");
+      assert(doc.querySelectorAll("#launch-checklist input").length === 13, "public security launch has 13 tasks");
+      doc.querySelector("#launch-checklist input").click();
+      assert(doc.querySelector("#checklist-progress").textContent.startsWith("1 /"), "completion count updates");
+      assert(parseFloat(doc.querySelector("#progress-fill").style.width) > 0, "progress bar updates");
+      doc = await load("/planner.html?solution=Static%20website");
+      assert(doc.querySelector("#launch-checklist input").checked, "completion survives reload with a selection query");
+      assert(doc.querySelector("#project-scope").value === "launch", "scope survives reload");
+      // Inspect the real download content without saving a file in the user's Downloads.
+      let downloaded = null;
+      const originalCreate = frame.contentWindow.URL.createObjectURL;
+      const originalRevoke = frame.contentWindow.URL.revokeObjectURL;
+      const originalClick = frame.contentWindow.HTMLAnchorElement.prototype.click;
+      frame.contentWindow.URL.createObjectURL = (blob) => { downloaded = blob; return "blob:gbm-test"; };
+      frame.contentWindow.URL.revokeObjectURL = () => {};
+      frame.contentWindow.HTMLAnchorElement.prototype.click = function () {};
+      doc.querySelector("#download-list").click();
+      assert(downloaded && (await downloaded.text()).includes("GBM Cloud"), "download contains GBM Cloud branding");
+      assert((await downloaded.text()).includes("[x] Define"), "download preserves checked tasks");
+      frame.contentWindow.URL.createObjectURL = originalCreate;
+      frame.contentWindow.URL.revokeObjectURL = originalRevoke;
+      frame.contentWindow.HTMLAnchorElement.prototype.click = originalClick;
+      doc.querySelector("#clear-plan").click();
+      assert(!doc.querySelector("#launch-checklist input").checked, "clear resets completion");
+      assert(doc.querySelector("#project-name").value === "", "clear resets project name");
+      assert(frame.contentWindow.location.search === "", "clear removes the selection query");
+      doc = await load("/planner.html");
+      assert(doc.querySelector("#project-name").value === "", "cleared plan stays cleared after reload");
+      // Stored input is treated as text.
+      doc.querySelector("#project-name").value = "<img src=x onerror=alert(1)>";
+      doc.querySelector("#launch-planner").dispatchEvent(new frame.contentWindow.Event("submit", { cancelable: true }));
+      assert(doc.querySelector("#list-title").textContent.includes("<img"), "project name renders as plain text");
+      assert(!doc.querySelector("#list-title img"), "project name cannot inject HTML");
+    } finally {
+      const storage = frame.contentWindow.localStorage;
+      if (backup.current === null) storage.removeItem(newKey); else storage.setItem(newKey, backup.current);
+      if (backup.old === null) storage.removeItem(oldKey); else storage.setItem(oldKey, backup.old);
+    }
+    for (const width of [390, 820, 1440]) {
+      frame.style.maxWidth = "none";
+      frame.style.width = width + "px";
+      frame.width = String(width);
+      for (const page of ["index.html", "solutions.html", "resources.html", "about.html", "planner.html", "404.html", "trails.html", "journal.html", "plan.html"]) {
+        doc = await load("/" + page);
+        assert(doc.documentElement.scrollWidth <= frame.clientWidth + 1, page + " fits " + width + "px");
+        assert(doc.querySelectorAll("#main-nav a").length === 5, page + " has five navigation links at " + width + "px");
+        assert(doc.title.includes("GBM Cloud"), page + " has current page-title branding");
+        assert(!doc.body.textContent.toLowerCase().includes("field notes"), page + " has no previous visible brand");
+      }
+    }
+    const missing = await fetch("/a-real-missing-page.html");
+    assert(missing.status === 404 && (await missing.text()).includes('data-error-page="404"'), "missing address returns branded page with HTTP 404");
+    document.querySelector("#result").textContent = "ALL PASSED\n" + results.join("\n");
+  } catch (error) {
+    document.querySelector("#result").textContent = "FAILED\n" + results.join("\n") + "\n" + error.message;
+  }
+})();
+</script></body></html>

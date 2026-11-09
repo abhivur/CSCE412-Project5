@@ -1,0 +1,81 @@
+{
+  "audience": "CSCE 412 technical reviewer",
+  "purpose": "Explain the implemented secure website and custom multi-agent system using actual evidence",
+  "required_format": "One PDF document",
+  "page_limit": null,
+  "branding": "GBM Cloud logo on title page only; black body text and headings on white; standard LaTeX font; one-inch margins",
+  "author": "Sai Abhinav Vurakaranam",
+  "course": "CSCE 412",
+  "website": "https://csce412abhivur.me/",
+  "repository": "https://github.com/abhivur/CSCE412-Project5",
+  "sections": [
+    {
+      "requirement": "Project overview, five pages, JavaScript feature, website URL",
+      "section": "1",
+      "addressed": true
+    },
+    {
+      "requirement": "AWS diagram, service roles, deployment and delivery",
+      "section": "2",
+      "addressed": true
+    },
+    {
+      "requirement": "At least four agent roles, agent diagram, model/provider, communication, decisions versus execution",
+      "section": "3",
+      "addressed": true
+    },
+    {
+      "requirement": "Agent invocation, meaningful tools, actual inputs and outputs, validation and approvals",
+      "section": "4",
+      "addressed": true
+    },
+    {
+      "requirement": "Private S3, OAC, HTTPS, redirects, IAM, credentials",
+      "section": "5",
+      "addressed": true
+    },
+    {
+      "requirement": "Real reversible fault, diagnosis, approved recovery, measured evidence",
+      "section": "6",
+      "addressed": true
+    },
+    {
+      "requirement": "Challenges, engineering lessons, references, AI disclosure",
+      "section": "7 and references",
+      "addressed": true
+    },
+    {
+      "requirement": "Title page, author, project title, website and repository links",
+      "section": "Title page and 1.1",
+      "addressed": true
+    },
+    {
+      "requirement": "Readable diagrams",
+      "section": "Figures 1 and 2",
+      "addressed": true
+    },
+    {
+      "requirement": "Labeled screenshots",
+      "section": null,
+      "addressed": false,
+      "reason": "Screenshots omitted at the user\u2019s explicit request after review of the completed report.",
+      "waived_by_user": true
+    }
+  ],
+  "prohibited": [
+    "Em dashes",
+    "Secrets",
+    "Placeholders",
+    "Fabricated screenshots or execution results",
+    "Unverified claims of effective account least privilege"
+  ],
+  "required_appendices": [],
+  "sources": [
+    "context/documentation-guideline.md",
+    "context/project5-technical-documentation.txt",
+    "context/project5intro.txt",
+    "cloudcrew/",
+    "website/",
+    "runtime/runs/20261109T032929-cece25c9/"
+  ]
+}

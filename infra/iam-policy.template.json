@@ -1,0 +1,96 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ProjectBucketOnly",
+      "Effect": "Allow",
+      "Action": ["s3:CreateBucket", "s3:ListBucket", "s3:GetBucketTagging", "s3:PutBucketTagging", "s3:GetBucketPublicAccessBlock", "s3:PutBucketPublicAccessBlock", "s3:PutBucketOwnershipControls", "s3:PutEncryptionConfiguration", "s3:GetEncryptionConfiguration", "s3:GetBucketPolicy", "s3:PutBucketPolicy", "s3:GetBucketPolicyStatus"],
+      "Resource": "arn:aws:s3:::BUCKET_NAME"
+    },
+    {
+      "Sid": "ProjectObjectsOnly",
+      "Effect": "Allow",
+      "Action": ["s3:PutObject", "s3:GetObject"],
+      "Resource": "arn:aws:s3:::BUCKET_NAME/*"
+    },
+    {
+      "Sid": "DiscoveryAndOacCreation",
+      "Effect": "Allow",
+      "Action": ["cloudfront:ListDistributions", "cloudfront:ListOriginAccessControls", "cloudfront:CreateOriginAccessControl", "route53:ListHostedZonesByName", "acm:ListCertificates"],
+      "Resource": "*"
+    },
+    {
+      "Sid": "OacRead",
+      "Effect": "Allow",
+      "Action": "cloudfront:GetOriginAccessControl",
+      "Resource": "arn:aws:cloudfront::ACCOUNT_ID:origin-access-control/*"
+    },
+    {
+      "Sid": "TaggedDistributionCreation",
+      "Effect": "Allow",
+      "Action": "cloudfront:CreateDistribution",
+      "Resource": "*",
+      "Condition": {"StringEquals": {"aws:RequestTag/Project": "PROJECT_ID", "aws:RequestTag/CloudCrewBinding": "BINDING"}}
+    },
+    {
+      "Sid": "DistributionTagOnCreate",
+      "Effect": "Allow",
+      "Action": "cloudfront:TagResource",
+      "Resource": "arn:aws:cloudfront::ACCOUNT_ID:distribution/*",
+      "Condition": {"StringEquals": {"aws:RequestTag/CloudCrewBinding": "BINDING"}}
+    },
+    {
+      "Sid": "ProjectDistributionOperations",
+      "Effect": "Allow",
+      "Action": ["cloudfront:GetDistribution", "cloudfront:GetDistributionConfig", "cloudfront:ListTagsForResource", "cloudfront:UpdateDistribution", "cloudfront:CreateInvalidation", "cloudfront:GetInvalidation"],
+      "Resource": "arn:aws:cloudfront::ACCOUNT_ID:distribution/*",
+      "Condition": {"StringEquals": {"aws:ResourceTag/CloudCrewBinding": "BINDING"}}
+    },
+    {
+      "Sid": "HostedZoneBootstrapOnly",
+      "Effect": "Allow",
+      "Action": "route53:CreateHostedZone",
+      "Resource": "*"
+    },
+    {
+      "Sid": "ProjectHostedZoneRead",
+      "Effect": "Allow",
+      "Action": ["route53:GetHostedZone", "route53:ListResourceRecordSets"],
+      "Resource": "arn:aws:route53:::hostedzone/HOSTED_ZONE_ID"
+    },
+    {
+      "Sid": "ProjectAliasRecords",
+      "Effect": "Allow",
+      "Action": "route53:ChangeResourceRecordSets",
+      "Resource": "arn:aws:route53:::hostedzone/HOSTED_ZONE_ID",
+      "Condition": {"ForAllValues:StringEquals": {"route53:ChangeResourceRecordSetsNormalizedRecordNames": ["DOMAIN_NAME"], "route53:ChangeResourceRecordSetsRecordTypes": ["A", "AAAA"], "route53:ChangeResourceRecordSetsActions": ["UPSERT"]}}
+    },
+    {
+      "Sid": "ProjectCertificateValidationRecord",
+      "Effect": "Allow",
+      "Action": "route53:ChangeResourceRecordSets",
+      "Resource": "arn:aws:route53:::hostedzone/HOSTED_ZONE_ID",
+      "Condition": {"ForAllValues:StringLike": {"route53:ChangeResourceRecordSetsNormalizedRecordNames": ["_*.DOMAIN_NAME"]}, "ForAllValues:StringEquals": {"route53:ChangeResourceRecordSetsRecordTypes": ["CNAME"], "route53:ChangeResourceRecordSetsActions": ["UPSERT"]}}
+    },
+    {
+      "Sid": "ProjectCertificateRequest",
+      "Effect": "Allow",
+      "Action": "acm:RequestCertificate",
+      "Resource": "*",
+      "Condition": {"ForAllValues:StringEquals": {"acm:DomainNames": ["DOMAIN_NAME"]}, "StringEquals": {"acm:ValidationMethod": "DNS", "aws:RequestedRegion": "us-east-1", "aws:RequestTag/CloudCrewBinding": "BINDING"}}
+    },
+    {
+      "Sid": "CertificateTagOnCreate",
+      "Effect": "Allow",
+      "Action": "acm:AddTagsToCertificate",
+      "Resource": "arn:aws:acm:us-east-1:ACCOUNT_ID:certificate/*",
+      "Condition": {"StringEquals": {"aws:RequestTag/CloudCrewBinding": "BINDING"}}
+    },
+    {
+      "Sid": "CertificateDiscoveryRead",
+      "Effect": "Allow",
+      "Action": ["acm:DescribeCertificate", "acm:ListTagsForCertificate"],
+      "Resource": "arn:aws:acm:us-east-1:ACCOUNT_ID:certificate/*"
+    }
+  ]
+}
