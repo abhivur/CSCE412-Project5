@@ -9,6 +9,7 @@ import subprocess
 import time
 
 from .core import redact
+from .aws_input import cli_input
 from .pipeline_config import definitions, validate_definitions
 from .release_aws import ReleaseAwsError
 
@@ -33,11 +34,13 @@ class SetupAWS:
         if operation not in ADMIN_OPERATIONS.get(service, set()):
             raise PermissionError('Administrator operation is outside the setup allowlist')
         args = ['aws', service, operation, '--region', self.config['region'], '--output', 'json',
-                '--no-cli-pager', '--cli-connect-timeout', '10', '--cli-read-timeout', '60', '--cli-input-json', 'file:///dev/stdin']
+                '--no-cli-pager', '--cli-connect-timeout', '10', '--cli-read-timeout', '60']
         if self.profile: args += ['--profile', self.profile]
         self.audit.emit('pipeline_setup', 'aws_request', {'service': service, 'operation': operation, 'parameters': params})
-        result = subprocess.run(args, input=json.dumps(params), text=True, capture_output=True, timeout=100,
-                                env=dict(os.environ, AWS_PAGER='', AWS_MAX_ATTEMPTS='3'))
+        with cli_input(params) as request:
+            result = subprocess.run(args + ['--cli-input-json', request], stdin=subprocess.DEVNULL,
+                                    text=True, capture_output=True, timeout=100,
+                                    env=dict(os.environ, AWS_PAGER='', AWS_MAX_ATTEMPTS='3', AWS_CLI_AUTO_PROMPT='off'))
         if result.returncode: raise ReleaseAwsError(operation, result.stderr)
         value = json.loads(result.stdout) if result.stdout.strip() else {}
         self.audit.emit('pipeline_setup', 'aws_result', {'service': service, 'operation': operation, 'result': value})

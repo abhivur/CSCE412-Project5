@@ -180,7 +180,9 @@ class ReleaseBoundaryTests(unittest.TestCase):
         with patch.dict(os.environ, {'CODEBUILD_BUILD_ID': 'unit:fixture'}), patch('cloudcrew.release_aws.subprocess.run', return_value=process) as run:
             aws.call('cloudfront', 'get-distribution-config', {'Id': self.config['distribution_id']})
         self.assertNotIn('--profile', run.call_args.args[0])
-        self.assertIn('file:///dev/stdin', run.call_args.args[0])
+        args = run.call_args.args[0]
+        self.assertTrue(args[args.index('--cli-input-json') + 1].startswith('file://'))
+        self.assertNotIn('input', run.call_args.kwargs)
 
 
 class ProductionVerificationTests(unittest.TestCase):

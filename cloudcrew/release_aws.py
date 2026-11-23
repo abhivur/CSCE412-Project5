@@ -8,6 +8,7 @@ import tempfile
 from pathlib import Path
 
 from .core import Audit, redact
+from .aws_input import cli_input
 from .release_config import ReleaseConfig, object_path
 
 
@@ -55,7 +56,7 @@ class ReleaseAWS:
             if "Resource" in params and params['Resource'] != self.config.distribution_arn:
                 raise PermissionError("Resource is outside this deployment")
         command = ["aws", service, operation, "--region", self.config['region'], "--output", "json", "--no-cli-pager",
-                   "--cli-connect-timeout", "10", "--cli-read-timeout", "60", "--cli-input-json", "file:///dev/stdin"]
+                   "--cli-connect-timeout", "10", "--cli-read-timeout", "60"]
         if self.profile and not os.environ.get("CODEBUILD_BUILD_ID"):
             command += ["--profile", self.profile]
         if body:
@@ -67,7 +68,9 @@ class ReleaseAWS:
         if os.environ.get('CODEBUILD_BUILD_ID'):
             env.pop('AWS_PROFILE', None)
             env.pop('AWS_DEFAULT_PROFILE', None)
-        result = subprocess.run(command, input=json.dumps(params), text=True, capture_output=True, timeout=100, env=env)
+        with cli_input(params) as request:
+            result = subprocess.run(command + ['--cli-input-json', request], stdin=subprocess.DEVNULL,
+                                    text=True, capture_output=True, timeout=100, env=env)
         if result.returncode:
             self.audit.emit("release_tool", "aws_error", {"operation": operation, "error": result.stderr})
             raise ReleaseAwsError(operation, result.stderr)
