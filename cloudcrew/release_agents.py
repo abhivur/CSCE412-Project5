@@ -11,6 +11,7 @@ from .core import ROOT, Config, digest
 from .llm import ResponsesModel, object_schema
 from .pipeline_config import definitions, render, validate_definitions
 from .release_artifacts import run_checks
+from .release_config import object_path
 from .release_verify import browser_available, verify_with_retries
 from .releases import ReleaseController
 
@@ -41,7 +42,8 @@ def read_execution(config, aws, execution):
         if revisions and index.get('source_commit') not in revisions:
             raise ValueError('Evidence source commit differs from the actual pipeline execution')
         for name in index['files']:
-            if name.endswith('.json') and not name.startswith('audit/'):
+            object_path(name)
+            if name.endswith('.json'):
                 item, _ = aws.get_json(config['artifact_bucket'], index['prefix'] + '/' + name)
                 evidence[stage + '/' + name] = item
     return {'status': 'inspected', 'execution_id': execution, 'pipeline': pipeline, 'actions': actions, 'builds': builds, 'evidence': evidence}

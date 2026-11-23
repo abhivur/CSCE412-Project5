@@ -90,6 +90,27 @@ class ReleaseAgentTests(unittest.TestCase):
         self.assertEqual(messages[1]['sender'], 'pipeline_engineer')
         self.assertEqual(messages[1]['upstream']['pipeline_engineer']['summary'], 'pipeline_engineer fixture result')
 
+    def test_diagnosis_reads_retained_production_and_rollback_reports(self):
+        class Aws:
+            def call(self, service, operation, params):
+                if operation == 'get-pipeline-execution':
+                    return {'pipelineExecution': {'artifactRevisions': [{'revisionId': 'a' * 40}]}}
+                return {'actionExecutionDetails': []}
+
+            def get_json(self, bucket, key, optional=False):
+                if key.endswith('index-validate.json'):
+                    return None, None
+                if key.endswith('index-release.json'):
+                    return {'execution_id': 'unit-execution', 'source_commit': 'a' * 40,
+                            'prefix': 'evidence/unit-execution/unit-build',
+                            'files': ['audit/production-verification.json',
+                                      'audit/rollback-verification.json']}, 'fixture'
+                return {'status': 'failed' if 'production-' in key else 'passed'}, 'fixture'
+
+        result = read_execution(self.config, Aws(), 'unit-execution')
+        self.assertEqual(result['evidence']['release/audit/production-verification.json']['status'], 'failed')
+        self.assertEqual(result['evidence']['release/audit/rollback-verification.json']['status'], 'passed')
+
 
 class EvidenceTests(unittest.TestCase):
     def test_execution_export_keeps_failed_status_and_hashes_actual_fixture_bytes(self):
