@@ -1,0 +1,20 @@
+{
+  "project": "gbm-cloud-project6",
+  "account_id": "812040916945",
+  "region": "us-east-1",
+  "domain": "csce412abhivur.me",
+  "site_bucket": "csce412abhivur-me-project5",
+  "artifact_bucket": "gbm-cloud-project6-812040916945-us-east-1",
+  "distribution_id": "E1YB5Q5M7QMQA9",
+  "ownership_binding": "f4b0c6306b83894214217e7519884c58feda34d8b4ea49a84b02335261d194e5",
+  "repository_owner": "abhivur",
+  "repository_name": "CSCE412-Project5",
+  "branch": "main",
+  "source_provider": "github_oauth",
+  "connection_arn": null,
+  "connection_approved": false,
+  "image": "aws/codebuild/standard:7.0",
+  "verify_attempts": 6,
+  "verify_delay_seconds": 10,
+  "cloudfront_timeout_seconds": 900
+}

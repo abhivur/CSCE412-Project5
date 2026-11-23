@@ -66,4 +66,4 @@ STRINGS = {"type": "array", "items": STRING}
 FINISH = object_schema({"status": {"type": "string", "enum": ["complete", "blocked"]}, "summary": STRING,
     "findings": STRINGS, "evidence": STRINGS,
     "tasks": {"type": "array", "items": object_schema({
-        "agent": {"type": "string", "enum": ["website", "infrastructure", "verification", "diagnosis"]}, "task": STRING})}})
+        "agent": {"type": "string", "enum": ["website", "infrastructure", "verification", "diagnosis", "pipeline_engineer", "test_engineer", "release_verifier", "release_diagnosis", "recovery_coordinator"]}, "task": STRING})}})

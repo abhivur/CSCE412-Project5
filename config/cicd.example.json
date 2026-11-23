@@ -1,0 +1,20 @@
+{
+  "project": "gbm-cloud-project6",
+  "account_id": "123456789012",
+  "region": "us-east-1",
+  "domain": "project.example.test",
+  "site_bucket": "replace-with-project5-bucket",
+  "artifact_bucket": "replace-with-private-project6-artifacts",
+  "distribution_id": "REPLACE_ME",
+  "ownership_binding": "replace-with-project5-binding",
+  "repository_owner": "YOUR_GITHUB_USER",
+  "repository_name": "CSCE412-Project5",
+  "branch": "main",
+  "source_provider": "github_oauth",
+  "connection_arn": null,
+  "connection_approved": false,
+  "image": "aws/codebuild/standard:7.0",
+  "verify_attempts": 6,
+  "verify_delay_seconds": 10,
+  "cloudfront_timeout_seconds": 900
+}

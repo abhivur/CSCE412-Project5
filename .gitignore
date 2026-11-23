@@ -12,6 +12,9 @@ config/project.json
 config/report.json
 runtime/
 dist/
+out/
+playwright-report/
+test-results/
 artifacts/
 submission/
 *.log

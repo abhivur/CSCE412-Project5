@@ -1,0 +1,16 @@
+{
+  "version": "0.2",
+  "env": {"shell": "bash"},
+  "phases": {
+    "install": {
+      "runtime-versions": {"python": "3.12", "nodejs": "22"},
+      "commands": ["python3 -m pip install --disable-pip-version-check -r requirements-ci.txt", "python3 -m playwright install --with-deps chromium"]
+    },
+    "build": {
+      "on-failure": "ABORT",
+      "commands": ["python3 -m cloudcrew.cicd release --bundle \"$CODEBUILD_SRC_DIR_ValidatedArtifact/release\" --pipeline"],
+      "finally": ["python3 -m cloudcrew.cicd publish-evidence --stage release"]
+    }
+  },
+  "artifacts": {"base-directory": "out", "files": ["**/*"], "discard-paths": "no"}
+}

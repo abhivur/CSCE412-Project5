@@ -43,13 +43,13 @@ def load_env(path: Path = ROOT / ".env") -> None:
 
 def redact(value: Any) -> Any:
     if isinstance(value, dict):
-        return {k: "[REDACTED]" if re.search(r"secret|password|api.?key|access.?key|session.?token|authorization", k, re.I)
+        return {k: "[REDACTED]" if re.search(r"secret|password|api.?key|access.?key|(?:session|oauth|github|refresh).?token|authorization", k, re.I)
                 else redact(v) for k, v in value.items()}
     if isinstance(value, (list, tuple)):
         return [redact(v) for v in value]
     if isinstance(value, str):
         for key, secret in os.environ.items():
-            if secret and len(secret) > 7 and re.search(r"SECRET|PASSWORD|API_KEY|ACCESS_KEY|SESSION_TOKEN", key):
+            if secret and len(secret) > 7 and re.search(r"SECRET|PASSWORD|API_KEY|ACCESS_KEY|TOKEN", key):
                 value = value.replace(secret, "[REDACTED]")
         value = re.sub(r"\b(?:AKIA|ASIA)[A-Z0-9]{16}\b", "[REDACTED]", value)
         value = re.sub(r"\bsk-[A-Za-z0-9_-]{16,}\b", "[REDACTED]", value)

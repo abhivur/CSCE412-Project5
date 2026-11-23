@@ -1,0 +1,13 @@
+{
+  "version": "0.2",
+  "env": {"shell": "bash"},
+  "phases": {
+    "install": {"runtime-versions": {"python": "3.12", "nodejs": "22"}},
+    "build": {
+      "on-failure": "ABORT",
+      "commands": ["python3 -m cloudcrew.cicd validate --pipeline"],
+      "finally": ["python3 -m cloudcrew.cicd publish-evidence --stage validate"]
+    }
+  },
+  "artifacts": {"base-directory": "out", "files": ["release/**/*", "validation-report.json"], "discard-paths": "no"}
+}

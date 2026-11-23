@@ -1,6 +1,83 @@
 # GBM Cloud
 
-**CSCE 412 Project 5 | Sai Abhinav Vurakaranam | Texas A&M University**
+**CSCE 412 Projects 5 and 6 | Sai Abhinav Vurakaranam | Texas A&M University**
+
+## Project 6: automatic releases and recovery
+
+Project 6 extends the existing website and agent system. An approved push to
+`main` triggers CodePipeline, then CodeBuild runs mandatory Python/JavaScript
+tests, generates the website, and validates a commit-associated release package.
+Only a passing gate can reach the release job. That job publishes immutable S3
+release folders, switches the existing CloudFront origin path, invalidates cache,
+and verifies the actual public site. Failed production checks restore and verify
+the previous complete release while leaving the candidate pipeline execution failed.
+
+The release pipeline is deterministic and does not need an LLM API to build,
+deploy, verify, or roll back. Five additional agent roles reuse the Project 5
+agent loop for pipeline engineering, executable testing, production verification,
+evidence-based diagnosis, and recovery coordination. Their tools, result handling,
+schema validation, and structured handoffs are implemented in code.
+
+Start with the [Project 6 setup and operations runbook](docs/project6-runbook.md).
+It covers the architecture, dependencies, permissions, GitHub authentication,
+baseline adoption, exact-plan approval, environment variables, cache handling,
+release identity, recovery, and actual agent execution. Follow the
+[three experiment procedures](docs/project6-experiments.md) to collect the required
+successful-release, rejected-source, and production-failure/rollback evidence.
+
+### Project 6 source map
+
+| File | Responsibility |
+| --- | --- |
+| `cloudcrew/cicd.py` | Executable CI/CD CLI, pipeline context checks, setup and approval routing |
+| `cloudcrew/pipeline_config.py` | Actual CodePipeline, CodeBuild, GitHub webhook, and scoped IAM definitions |
+| `cloudcrew/pipeline_setup.py` | Explicitly approved administrator setup; no IAM privileges in release jobs |
+| `ci/buildspec-validate.yml` | Mandatory pre-deployment tests and machine-readable results |
+| `ci/buildspec-release.yml` | Exact tested artifact, browser prerequisite, deployment, verification, compensation |
+| `cloudcrew/release_artifacts.py` | Versioned HTML/assets, release metadata, manifests, integrity and structural checks |
+| `cloudcrew/releases.py` | Immutable upload, conditional state, activation, known-good promotion, full rollback |
+| `cloudcrew/release_verify.py` | Public HTTP/TLS, hashes, release ID, S3/OAC checks, real browser planner test |
+| `cloudcrew/release_agents.py` | Five CI/CD agent roles, actual execution evidence and approved bounded recovery |
+| `cloudcrew/release_evidence.py` | Export actual AWS/build/agent records with redaction and hash manifest |
+| `config/cicd.example.json` | Configuration template for another deployment |
+| `config/cicd.production.json` | Nonsecret identifiers for the existing GBM Cloud deployment |
+| `requirements-ci.txt` | Pinned browser-verification dependency |
+
+### Project 6 commands
+
+Run from this repository, using Python 3.10+ and Node.js 18+ locally:
+
+```bash
+python3 -m unittest discover -s tests -v
+node --test tests/*.test.cjs
+python3 -m cloudcrew.cicd validate
+python3 -m cloudcrew.cicd pipeline-plan
+python3 -m cloudcrew.cicd agents --mode engineer
+```
+
+Actual browser checks additionally require installation of `requirements-ci.txt`
+and Chromium. CodeBuild installs them before release activation. Agent commands
+need `OPENAI_API_KEY`; `OPENAI_MODEL` selects a tool-capable Responses model.
+`GITHUB_SOURCE_TOKEN` is used only for GitHub OAuth setup. None of these secrets
+is committed or passed to a release job. See `.env.example` and the runbook.
+
+For a real failed execution, use its actual CodePipeline ID:
+
+```bash
+python3 -m cloudcrew.cicd --profile default agents --mode diagnose --execution ACTUAL_EXECUTION_ID
+python3 -m cloudcrew.cicd --profile default evidence --execution ACTUAL_EXECUTION_ID
+```
+
+Source and agent code being present does not establish that the AWS experiments
+have run. Setup, pushes, live verification, and experiment outcomes must be
+demonstrated with actual records. Keep this repository private, grant the
+designated teaching staff access, and submit this same repository URL for the
+Project 6 Agent Code GitHub Link assignment.
+
+## Project 5 foundation and original commands
+
+The material below describes the retained Project 5 implementation. After
+Project 6 baseline adoption, use the Project 6 release commands for live changes.
 
 - Website: <https://csce412abhivur.me/>
 - Private repository: <https://github.com/abhivur/CSCE412-Project5>
@@ -217,7 +294,9 @@ node --test tests/*.test.cjs
 node --check website/assets/app.js
 ```
 
-The current suite has 56 Python tests and 12 JavaScript tests. It covers schemas,
+The Project 5 foundation contributes 56 Python tests and 12 JavaScript tests.
+Project 6 adds pipeline, artifact, verification, concurrency, and rollback tests.
+The foundation tests cover schemas,
 tool allowlists, approvals and stale plans, recovery evidence, expected-failure
 observation, links, escaping, planner state and downloads, filtering, and mobile
 navigation. Tests use isolated fixtures and make no live AWS changes or billable
@@ -232,7 +311,7 @@ model calls. With the preview running, open
 | `website/` | Editable content, CSS, JavaScript, and original SVG assets |
 | `config/*.example.json`, `.env.example` | Configuration and environment templates |
 | `infra/` | IAM template and administrative guidance |
-| `scripts/` | Local preview and optional LaTeX report build |
+| `scripts/` | Local preview, read-only demo evidence viewer, and optional LaTeX report build |
 | `tests/` | Python/JavaScript tests and browser harness |
 | `docs/` | Architecture, runbook, demo guidance, and report LaTeX source |
 | `pyproject.toml` | Python metadata, supported version, optional CLI entry points |

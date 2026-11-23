@@ -1,0 +1,2 @@
+# Browser checks run against the public release. The application itself uses the standard library.
+playwright==1.65.2

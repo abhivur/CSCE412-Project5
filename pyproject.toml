@@ -3,15 +3,16 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "gbm-cloud-project5"
-version = "0.1.0"
-description = "Restricted multi-agent deployment of a private S3 / CloudFront static website"
+name = "gbm-cloud"
+version = "0.2.0"
+description = "Multi-agent secure website deployment, CI/CD, verification and bounded release recovery"
 requires-python = ">=3.10"
 dependencies = []
 
 [project.scripts]
 gbm-cloud = "cloudcrew.cli:main"
 cloudcrew = "cloudcrew.cli:main"
+gbm-release = "cloudcrew.cicd:main"
 
 [tool.setuptools]
 packages = ["cloudcrew"]
