@@ -57,20 +57,34 @@ class ReleaseAWS:
                 raise PermissionError("Resource is outside this deployment")
         command = ["aws", service, operation, "--region", self.config['region'], "--output", "json", "--no-cli-pager",
                    "--cli-connect-timeout", "10", "--cli-read-timeout", "60"]
+        download = service == 's3api' and operation == 'get-object'
+        download_options = {'Bucket': '--bucket', 'Key': '--key', 'VersionId': '--version-id',
+                            'IfMatch': '--if-match', 'ExpectedBucketOwner': '--expected-bucket-owner'}
+        if download and (output_file is None or 'Key' not in params or set(params) - set(download_options)):
+            raise ValueError('S3 downloads require an output file and supported bucket/key arguments')
+        if output_file is not None and not download:
+            raise PermissionError('Output files are only supported for S3 downloads')
         if self.profile and not os.environ.get("CODEBUILD_BUILD_ID"):
             command += ["--profile", self.profile]
         if body:
+            if service != 's3api' or operation != 'put-object':
+                raise PermissionError('File bodies are only supported for S3 uploads')
             command += ["--body", str(body)]
-        if output_file:
-            command.append(str(output_file))
         self.audit.emit("release_tool", "aws_request", {"service": service, "operation": operation, "parameters": params})
         env = dict(os.environ, AWS_PAGER="", AWS_MAX_ATTEMPTS="3", AWS_CLI_AUTO_PROMPT="off")
         if os.environ.get('CODEBUILD_BUILD_ID'):
             env.pop('AWS_PROFILE', None)
             env.pop('AWS_DEFAULT_PROFILE', None)
-        with cli_input(params) as request:
-            result = subprocess.run(command + ['--cli-input-json', request], stdin=subprocess.DEVNULL,
+        if download:
+            # AWS CLI does not support JSON input for commands with a streaming output file.
+            for key, value in params.items():
+                command += [download_options[key], str(value)]
+            result = subprocess.run(command + [str(output_file)], stdin=subprocess.DEVNULL,
                                     text=True, capture_output=True, timeout=100, env=env)
+        else:
+            with cli_input(params) as request:
+                result = subprocess.run(command + ['--cli-input-json', request], stdin=subprocess.DEVNULL,
+                                        text=True, capture_output=True, timeout=100, env=env)
         if result.returncode:
             self.audit.emit("release_tool", "aws_error", {"operation": operation, "error": result.stderr})
             raise ReleaseAwsError(operation, result.stderr)

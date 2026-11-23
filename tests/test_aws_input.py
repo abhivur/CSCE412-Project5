@@ -72,5 +72,42 @@ class AwsInputTests(unittest.TestCase):
                 SetupAWS(self.config, self.audit).call('sts', 'get-caller-identity', {})
         self.assertFalse(self.path.exists())
 
+    def test_s3_download_uses_explicit_arguments_and_preserves_bytes_and_etag(self):
+        downloaded = []
+        def run(command, **kwargs):
+            self.assertNotIn('--cli-input-json', command)
+            self.assertEqual(command[command.index('--bucket') + 1], self.config['site_bucket'])
+            self.assertEqual(command[command.index('--key') + 1], 'index.html')
+            self.assertEqual(kwargs['stdin'], subprocess.DEVNULL)
+            path = Path(command[-1])
+            downloaded.append(path)
+            path.write_bytes(b'actual unit fixture bytes')
+            return subprocess.CompletedProcess(command, 0, stdout='{"ETag":"unit-etag"}', stderr='')
+        with patch('cloudcrew.release_aws.subprocess.run', side_effect=run):
+            data, etag = ReleaseAWS(self.config, self.audit).get(self.config['site_bucket'], 'index.html')
+        self.assertEqual(data, b'actual unit fixture bytes')
+        self.assertEqual(etag, 'unit-etag')
+        self.assertFalse(downloaded[0].exists())
+
+    def test_s3_download_retains_optional_version_and_etag_conditions(self):
+        params = {'Bucket': self.config['site_bucket'], 'Key': 'index.html', 'VersionId': 'unit-version', 'IfMatch': 'unit-etag'}
+        process = subprocess.CompletedProcess([], 0, stdout='{}', stderr='')
+        with patch('cloudcrew.release_aws.subprocess.run', return_value=process) as run:
+            ReleaseAWS(self.config, self.audit).call('s3api', 'get-object', params, output_file=Path(self.tmp.name) / 'out')
+        command = run.call_args.args[0]
+        self.assertEqual(command[command.index('--version-id') + 1], 'unit-version')
+        self.assertEqual(command[command.index('--if-match') + 1], 'unit-etag')
+
+    def test_missing_s3_object_is_an_optional_state_read_not_a_parser_error(self):
+        process = subprocess.CompletedProcess([], 254, stdout='', stderr='An error occurred (NoSuchKey) when calling GetObject')
+        with patch('cloudcrew.release_aws.subprocess.run', return_value=process):
+            result = ReleaseAWS(self.config, self.audit).get_json(self.config['artifact_bucket'], 'control/production.json', optional=True)
+        self.assertEqual(result, (None, None))
+
+    def test_s3_download_without_output_file_is_rejected_before_execution(self):
+        with patch('cloudcrew.release_aws.subprocess.run') as run, self.assertRaises(ValueError):
+            ReleaseAWS(self.config, self.audit).call('s3api', 'get-object', {'Bucket': self.config['site_bucket'], 'Key': 'index.html'})
+        run.assert_not_called()
+
 
 if __name__ == '__main__': unittest.main()
