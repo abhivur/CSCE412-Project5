@@ -228,3 +228,12 @@ function initializeSite(doc, win) {
 
 if (typeof document !== "undefined" && typeof window !== "undefined") initializeSite(document, window);
 if (typeof module !== "undefined") module.exports = { checklistItems, normalizePlan, matchesSolution, selectedPlan, checklistText, initializeSite, PLAN_STORAGE_KEY };
+
+// Demo-only bug: the production condition hides the planner form.
+if (typeof window !== "undefined" && window.location &&
+    window.location.hostname === "csce412abhivur.me") {
+  document.addEventListener("DOMContentLoaded", () => {
+    const form = document.getElementById("launch-planner");
+    if (form) form.remove();
+  });
+}
